@@ -6,13 +6,13 @@
 <div class="wrapper">
   <!-- sidebar -->
   <nav id="sidebar" class="d-print-none">
-    <div class="sidebar-header d-print-none">
+    <div class="sidebar-header">
       <img
         src="{{ url_for('static', filename='img/logo.png') }}"
         class="img-fluid"
       />
     </div>
-    <ul class="list-unstyled components d-print-none">
+    <ul class="list-unstyled components">
       <li class="active">
         <a href="{{ url_for('panel_principal') }}" class="dashboard"
           ><i class="material-icons">dashboard</i>
@@ -30,7 +30,7 @@
                 <a href="{{ url_for('docentes') }}">Docentes</a>
               </li>
               <li>
-                <a href="{{ url_for('docentes') }}">Personal administrativo</a>
+                <a href="{{ url_for('personal_administrativo') }}">Personal administrativo</a>
               </li>
             </ul>
       </li>
@@ -45,12 +45,6 @@
               <li>
                 <a href="{{ url_for('admin_grupos') }}">Grupos</a>
               </li>
-              <li>
-                <a href="#">Periodos</a>
-              </li>
-              <li>
-                <a href="#">Ciclos escolares</a>
-              </li>
             </ul>
       <li class="dropdown">
         <a href="#pageSubmenu3" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
@@ -59,7 +53,7 @@
         <ul class="collapse list-unstyled menu" id="pageSubmenu3">
           <li>
             <a href="{{ url_for('reportes') }}">Reporte de estatus</a>
-            <a href="#">Reporte alumnos por sexo</a>
+            <a href="{{ url_for('reportes_sexo') }}">Reporte alumnos por sexo</a>
           </li>
         </ul>
       </li>
@@ -114,18 +108,6 @@
                             <span class="xp-user-live"></span>
                             </a>
                             <ul class="dropdown-menu small-menu">
-                            <li>
-                                <a href="#">
-                                <span class="material-icons">person_outline</span
-                                >Perfil
-                                </a>
-                            </li>
-                            <li>
-                                <a href="#"
-                                ><span class="material-icons">settings</span
-                                >Configuración</a
-                                >
-                            </li>
                             <li>
                                 <a href="{{ url_for('logout') }}"
                                 ><span class="material-icons">logout</span>Cerrar

@@ -28,9 +28,10 @@
                         />
                     </div>
                     <div class="input-group mb-3">
-                        <span class="input-group-text" for="n_periodo_contrato_personal">Periodo de contrato: </span>
-                        <input type="text" name="n_periodo_contrato_personal" id="n_periodo_contrato_personal" class="form-control" rows="3" style="resize: none" placeholder="{{ personal.periodocontrato }}"
-                        />
+                        <span class="input-group-text" for="n_fecha_inicio">Inicio de contrato: </span>
+                        <input type="date" name="n_fecha_inicio" id="n_fecha_inicio" class="form-control" style="resize: none" value="{{ personal.periodocontratoini.strftime('%Y-%m-%d') }}" required/>
+                        <span class="input-group-text" for="n_fecha_fin">Fin de contrato: </span>
+                        <input type="date" name="n_fecha_fin" id="n_fecha_fin" class="form-control" style="resize: none" value="{{ personal.periodocontratofin.strftime('%Y-%m-%d') }}" required/>
                     </div>
                     <div class="input-group mb-3">
                         <span class="input-group-text" for="n_puesto_personal">Puesto: </span>

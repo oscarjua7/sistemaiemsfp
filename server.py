@@ -23,7 +23,13 @@ from database import Database
 from database import db_session
 
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
 
+from sqlalchemy import func
+
+from validate_email_address import validate_email
+import re
 import models
 
 app= Flask(__name__)
@@ -53,8 +59,35 @@ def panel_principal():
 
     if not sesion_iniciada:
         return redirect(url_for('login'))
-    
-    return render_template ('index.html')
+
+    # Contador para el modelo de alumnos
+    alumnos = db_session.query(models.Alumnos)
+    total_records_alumn = alumnos.count()
+
+    # Contador para el modelo de docentes
+    docentes = db_session.query(models.Docentes)
+    total_records_docen = docentes.count()
+
+    # Contador para el modelo de personal
+    personal = db_session.query(models.Personal)
+    total_records_per = personal.count()
+
+    # Contador para el modelo de usuarios
+    usuarios = db_session.query(models.Carreras)
+    total_records_carreras = usuarios.count()
+
+    return render_template('index.html',
+        alumnos=alumnos,
+        total_records_alumn=total_records_alumn,
+        docentes=docentes,
+        total_records_docen=total_records_docen,
+        personal=personal,
+        total_records_per=total_records_per,
+        usuarios=usuarios,
+        total_records_carreras=total_records_carreras,
+        models=models,
+        and_=and_,
+    )
 
 @app.route("/alumnos", methods=['GET', 'POST'])
 def alumnos():
@@ -90,9 +123,77 @@ def alumnos():
                                            total_records=total_records,
                                            records_por_pagina=records_por_pagina)
 
+@app.route("/personal", methods=['GET', 'POST'])
+def personal_administrativo():
+
+    sesion_iniciada = session.get('id', False)
+
+    if not sesion_iniciada:
+        return redirect(url_for('login'))
+    
+    personal = db_session.query(models.Personal).all()
+ 
+     # Obtener el parámetro 'records' del formulario
+    records_por_pagina = int(request.args.get('records', 4))  # Si no se proporciona, se mostrarán 4 registros por página
+    
+    page = request.args.get('page')
+    page = int(page) if (page and page != '') else 1
+
+    total_records = len(personal)
+    pages_count = ceil(total_records / records_por_pagina)
+
+    page_offset = (page - 1) * records_por_pagina
+    page_limit = page_offset + records_por_pagina
+    
+    personal_paginados = personal[page_offset:page_limit]
+
+    args = {'arg1': 'valor1', 'arg2': 'valor2'}
+    
+    return render_template ('personal/personal_administrativo.html', personal=personal_paginados, 
+                                           page=page, 
+                                           pages_count=pages_count, 
+                                           args=args, 
+                                           page_offset=page_offset, 
+                                           page_limit=page_limit, 
+                                           total_records=total_records,
+                                           records_por_pagina=records_por_pagina)
+
+@app.get("/docentes")
+def docentes():
+    sesion_iniciada = session.get('id', False)
+
+    if not sesion_iniciada:
+        return redirect(url_for('login'))
+    
+    docentes = db_session.query(models.Docentes).all()
+    
+     # Obtener el parámetro 'records' del formulario
+    records_por_pagina = int(request.args.get('records', 4))  # Si no se proporciona, se mostrarán 4 registros por página
+    
+    page = request.args.get('page')
+    page = int(page) if (page and page != '') else 1
+
+    total_records = len(docentes)
+    pages_count = ceil(total_records / records_por_pagina)
+
+    page_offset = (page - 1) * records_por_pagina
+    page_limit = page_offset + records_por_pagina
+    
+    docentes_paginados = docentes[page_offset:page_limit]
+
+    args = {'arg1': 'valor1', 'arg2': 'valor2'}
+    
+    return render_template ('docentes/docentes.html', docentes=docentes_paginados, 
+                                           page=page, 
+                                           pages_count=pages_count, 
+                                           args=args, 
+                                           page_offset=page_offset, 
+                                           page_limit=page_limit, 
+                                           total_records=total_records,
+                                           records_por_pagina=records_por_pagina)
+   
 @app.route('/carreras', methods=['GET', 'POST'])
 def admin_carreras():
-    
     if request.method == 'POST':
         nombre = request.form['nombre']
 
@@ -101,16 +202,83 @@ def admin_carreras():
             return redirect(url_for('admin_carreras'))
         
         nueva_carrera = models.Carreras()
-
         nueva_carrera.nombre = nombre
 
         db_session.add(nueva_carrera)
         db_session.commit()
         flash('Info: Registro completado.')
         return redirect(url_for('admin_carreras'))
-    
+
     carreras = db_session.query(models.Carreras).all()
-    return render_template('carreras/home_carreras.html', carreras=carreras)
+
+    # Obtener el parámetro 'records' del formulario
+    records_por_pagina = int(request.args.get('records', 4))  # Si no se proporciona, se mostrarán 4 registros por página
+    page = request.args.get('page')
+    page = int(page) if (page and page != '') else 1
+
+    total_records = len(carreras)
+    pages_count = ceil(total_records / records_por_pagina)
+
+    page_offset = (page - 1) * records_por_pagina
+    page_limit = page_offset + records_por_pagina
+    
+    carreras_paginadas = carreras[page_offset:page_limit]
+    
+    args = {'arg1': 'valor1', 'arg2': 'valor2'}
+
+    return render_template('carreras/home_carreras.html', carreras=carreras_paginadas, 
+                                                          page=page, 
+                                                          pages_count=pages_count, 
+                                                          args=args, 
+                                                          page_offset=page_offset, 
+                                                          page_limit=page_limit, 
+                                                          total_records=total_records,
+                                                          records_por_pagina=records_por_pagina)
+
+@app.route('/grupos', methods=['GET', 'POST'])
+def admin_grupos():
+    
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+
+        if not nombre or nombre == '':
+            flash('Error: Indica el nombre del grupo.')
+            return redirect(url_for('admin_grupos'))
+        
+        nuevo_grupo = models.Grupos()
+
+        nuevo_grupo.nombre = nombre
+
+        db_session.add(nuevo_grupo)
+        db_session.commit()
+        flash('Info: Grupo creado correctamente.')
+        return redirect(url_for('admin_grupos'))
+    
+    grupos = db_session.query(models.Grupos).all()
+    
+    # Obtener el parámetro 'records' del formulario
+    records_por_pagina = int(request.args.get('records', 4))  # Si no se proporciona, se mostrarán 4 registros por página
+    page = request.args.get('page')
+    page = int(page) if (page and page != '') else 1
+
+    total_records = len(grupos)
+    pages_count = ceil(total_records / records_por_pagina)
+
+    page_offset = (page - 1) * records_por_pagina
+    page_limit = page_offset + records_por_pagina
+    
+    grupos_paginados = grupos[page_offset:page_limit]
+    
+    args = {'arg1': 'valor1', 'arg2': 'valor2'}
+    
+    return render_template('grupos/home_grupos.html', grupos=grupos_paginados, 
+                                                      page=page, 
+                                                      pages_count=pages_count, 
+                                                      args=args, 
+                                                      page_offset=page_offset, 
+                                                      page_limit=page_limit, 
+                                                      total_records=total_records,
+                                                      records_por_pagina=records_por_pagina)
 
 @app.get('/admin/carreras/<id>/delete')
 def admin_carreras_delete(id):
@@ -147,28 +315,6 @@ def admin_carreras_update(id):
     flash('Info: Carrera actualizada correctamente.')
     return redirect(url_for('admin_carreras'))
 
-@app.route('/grupos', methods=['GET', 'POST'])
-def admin_grupos():
-    
-    if request.method == 'POST':
-        nombre = request.form['nombre']
-
-        if not nombre or nombre == '':
-            flash('Error: Indica el nombre del grupo.')
-            return redirect(url_for('admin_grupos'))
-        
-        nuevo_grupo = models.Grupos()
-
-        nuevo_grupo.nombre = nombre
-
-        db_session.add(nuevo_grupo)
-        db_session.commit()
-        flash('Info: Grupo creado correctamente.')
-        return redirect(url_for('admin_grupos'))
-    
-    grupos = db_session.query(models.Grupos).all()
-    return render_template('grupos/home_grupos.html', grupos=grupos)
-
 @app.get('/admin/grupos/<id>/delete')
 def admin_grupos_delete(id):
     
@@ -203,38 +349,7 @@ def admin_grupos_update(id):
 
     flash('Info: Grupo actualizado correctamente.')
     return redirect(url_for('admin_grupos'))
-
-@app.get("/docentes")
-def docentes():
-    sesion_iniciada = session.get('id', False)
-
-    if not sesion_iniciada:
-        return redirect(url_for('login'))
-    
-    docentes = db_session.query(models.Docentes).all()
-    
-    page = request.args.get('page')
-    page = int(page) if (page and page != '') else 1
-
-    page_size = 4
-    total_records = len(docentes)
-    pages_count = ceil(total_records / page_size)
-
-    page_offset = (page - 1) * page_size
-    page_limit = page_offset + page_size
-    
-    docentes_paginados = docentes[page_offset:page_limit]
-
-    args = {'arg1': 'valor1', 'arg2': 'valor2'}
-    
-    return render_template ('docentes/docentes.html', docentes=docentes_paginados, 
-                                            page=page, 
-                                            pages_count=pages_count, 
-                                            args=args, 
-                                            page_offset=page_offset, 
-                                            page_limit=page_limit, 
-                                            total_records=total_records)
-    
+ 
 # Ruta para generar el PDF
 @app.route('/reporte_alumnos')
 def reporte_alumnos():
@@ -264,6 +379,31 @@ def reporte_alumno_id(id):
     # Lista de registros para enviar al HTML del PDF
     return render_template('reportes/reporte_alumno_id.html', alumno=alumno)
 
+@app.get('/docente/<id>')
+def reporte_docente_id(id):
+    sesion_iniciada = session.get('id', False)
+
+    if not sesion_iniciada:
+        return redirect(url_for('login'))
+    
+    # Obtiene los datos de la tabla desde la base de datos SQLite
+    docente = db_session.query(models.Docentes).get(id)
+
+    # Lista de registros para enviar al HTML del PDF
+    return render_template('reportes/reporte_docente_id.html', docente=docente)
+
+@app.get('/personal/<id>')
+def reporte_personal_id(id):
+    sesion_iniciada = session.get('id', False)
+
+    if not sesion_iniciada:
+        return redirect(url_for('login'))
+    
+    # Obtiene los datos de la tabla desde la base de datos SQLite
+    personal = db_session.query(models.Personal).get(id)
+
+    # Lista de registros para enviar al HTML del PDF
+    return render_template('reportes/reporte_personal_id.html', personal=personal)
 # Ruta para generar el PDF
 @app.route('/reporte_docentes')
 def reporte_docentes():
@@ -322,48 +462,64 @@ def login_post():
     user = request.form['user']
     password = request.form['password']
 
-    #validar usuario y contraseña
-    usuarios = db_session.query(models.Usuarios).filter(
-        and_(models.Usuarios.nom_user==user,
-        models.Usuarios.user_ingreso==password)
-    ).first()
+    # Validar que los campos no estén vacíos
+    if not user or not password:
+        flash('Advertencia: Usuario y contraseña son obligatorios.')
+        return redirect(url_for('login'))
 
-    if not usuarios:
-        flash('Advertencia: Credenciales invalidas.')
-        return redirect(url_for('login_post'))
-    
-    session['id'] = usuarios.id
+    # Validar que el campo de usuario solo contenga números y letras
+    if not re.match("^[a-zA-Z0-9]+$", user):
+        flash('Advertencia: El usuario solo puede contener números y letras.')
+        return redirect(url_for('login'))
+
+    # Obtener el usuario de la base de datos
+    usuario = db_session.query(models.Usuarios).filter(models.Usuarios.nom_user == user).first()
+
+    # Verificar la contraseña utilizando check_password_hash
+    if not usuario or not check_password_hash(usuario.user_ingreso_hashed, password):
+        flash('Advertencia: Credenciales inválidas.')
+        return redirect(url_for('login'))
+
+    session['id'] = usuario.id
     return redirect(url_for('panel_principal'))
 
 @app.get('/logout')
 def logout():
     session.clear()
-
     return redirect(url_for('login'))
 
 @app.get("/usuarios")
 def form_usuarios():
     
     usuarios = db_session.query(models.Usuarios).all()
-    return render_template ('usuarios/formulario-usuarios.html', usuarios = usuarios)
+    return render_template ('usuarios/usuarios.html', usuarios = usuarios)
 
-# Rutas de tabla usuarios.
 @app.post("/usuario")
 def post_usuarios():
-
     nombre = request.form['nombre-user']
     contrasena = request.form['password']
 
-    if nombre == None or nombre == '':
-         return "No registrado",404
-    
+    if not nombre or not contrasena:
+        flash('Advertencia: Nombre de usuario y contraseña son obligatorios.')
+        return redirect(url_for('form_usuarios'))
+
+    # Validar que el campo de usuario solo contenga números y letras
+    if not re.match("^[a-zA-Z0-9]+$", nombre):
+        flash('Advertencia: El nombre de usuario solo puede contener números y letras.')
+        return redirect(url_for('form_usuarios'))
+
+    # Encriptar la contraseña antes de almacenarla
+    contrasena_encriptada = generate_password_hash(contrasena)
+
     nuevo_user = models.Usuarios(
-        nom_user = nombre,
-        user_ingreso = contrasena
+        nom_user=nombre,
+        user_ingreso_hashed=contrasena_encriptada
     )
 
     db_session.add(nuevo_user)
     db_session.commit()
+
+    flash('Usuario registrado exitosamente.')
     return redirect(url_for('form_usuarios'))
 
 @app.get("/usuario/<id>/delete")
@@ -385,7 +541,6 @@ def delete_usuario(id):
 # Ruta registro de alumnos
 @app.post("/post_alumnos")
 def post_alumnos():
-    '''Ruta para alta de alumnos'''
     sesion_iniciada = session.get('id', False)
 
     if not sesion_iniciada:
@@ -393,7 +548,7 @@ def post_alumnos():
     
     nombre = request.form['nombre_alumno']
     estatus = request.form['estatus_alumno']
-    sexo = request.form['sexo_alumno']
+    sexo = request.form.get('sexo_alumno')
     folio = request.form['folio_alumno']
     curp = request.form['curp_alumno']
     carrera = request.form['carrera_alumno']
@@ -402,23 +557,52 @@ def post_alumnos():
     telefono = request.form['telefono_alumno']
     fecha_inscripcion = request.form['fecha_inscripcion']
 
-    if nombre == None or nombre == '':
-        flash("No registraste ningun producto")
-        return redirect(url_for('home'))
-    
+    # Validar que el nombre solo contenga letras, espacios y caracteres acentuados en español
+    if not re.match("^[a-zA-Z\sáéíóúÁÉÍÓÚüÜñÑ]+$", nombre):
+        flash('Advertencia: El nombre solo puede contener letras, espacios y caracteres acentuados en español.')
+        return redirect(url_for('alumnos'))
+
+    # Validar que el folio solo contenga números y tenga un máximo de 7 caracteres
+    if not re.match("^[0-9]{1,7}$", folio):
+        flash('Advertencia: El folio debe contener como máximo 7 números y no se aceptan letras.')
+        return redirect(url_for('alumnos'))
+
+    # Validar que el CURP tenga un máximo de 18 caracteres y contenga solo letras mayúsculas y números
+    if not re.match("^[A-Z0-9]{18}$", curp):
+        flash('Advertencia: El CURP debe contener como máximo 18 caracteres y solo letras mayúsculas y números.')
+        return redirect(url_for('alumnos'))
+
+    # Validar que la carrera solo contenga letras, espacios y caracteres acentuados en español
+    if not re.match("^[a-zA-Z\sáéíóúÁÉÍÓÚüÜñÑ]+$", carrera):
+        flash('Advertencia: La carrera solo puede contener letras, espacios y caracteres acentuados en español.')
+        return redirect(url_for('alumnos'))
+
+    # Validar que el domicilio contenga solo números, letras y algunos signos de puntuación, incluyendo acentos
+    if not re.match("^[a-zA-Z0-9\sáéíóúÁÉÍÓÚüÜñÑ.,'-]+$", domicilio):
+        flash('Advertencia: El domicilio solo puede contener números, letras y algunos signos de puntuación, incluyendo acentos.')
+        return redirect(url_for('alumnos'))
+
+    # Validar que el teléfono solo contenga números y tenga exactamente 10 caracteres
+    if not re.match("^[0-9]{10}$", telefono):
+        flash('Advertencia: El teléfono debe contener exactamente 10 números.')
+        return redirect(url_for('alumnos'))
+
+
+    # Puedes agregar más validaciones según tus requisitos para correo y otros campos
+
     fecha_conversion = datetime.strptime(fecha_inscripcion, '%Y-%m-%d')
 
     nuevo_alumno = models.Alumnos(
-        nombre = nombre,
-        estatus = estatus,
-        sexo = sexo,
-        folio = folio,
-        curp = curp,
-        carrera = carrera,
-        domicilio = domicilio,
-        correo = correo,
-        telefono = telefono,
-        fecha_inscripcion= fecha_conversion
+        nombre=nombre,
+        estatus=estatus,
+        sexo=sexo,
+        folio=folio,
+        curp=curp,
+        carrera=carrera,
+        domicilio=domicilio,
+        correo=correo,
+        telefono=telefono,
+        fecha_inscripcion=fecha_conversion
     )   
 
     flash('Registro completado.')
@@ -426,6 +610,48 @@ def post_alumnos():
     db_session.add(nuevo_alumno)
     db_session.commit()
     return redirect(url_for('alumnos'))
+
+# Rutas de tabla alumnos
+@app.post("/post_personal")
+def post_personal():
+    '''Ruta para alta de alumnos'''
+    sesion_iniciada = session.get('id', False)
+
+    if not sesion_iniciada:
+        return redirect(url_for('login'))
+
+    nombre = request.form['nombre_personal']
+    folio = request.form['folio_personal']
+    puesto = request.form['puesto_personal']
+    periodocontratoini = request.form['fecha_inicio']
+    periodocontratofin = request.form['fecha_fin']
+    correo = request.form['correo_personal']
+    telefono = request.form['telefono_personal']
+    domicilio = request.form['domicilio_personal']
+
+    if nombre == None or nombre == '':
+        flash("No registraste ningun producto")
+        return redirect(url_for('home'))
+
+    fecha_conversion_inicio = datetime.strptime(periodocontratoini, '%Y-%m-%d')
+    fecha_conversion_fin = datetime.strptime(periodocontratofin, '%Y-%m-%d')  
+
+    nuevo_personal = models.Personal(
+        nombre = nombre,
+        folio = folio,
+        puesto = puesto,
+        periodocontratoini = fecha_conversion_inicio,
+        periodocontratofin = fecha_conversion_fin,
+        correo = correo,
+        telefono = telefono,
+        domicilio = domicilio
+    )
+
+    flash('Registro completado.')
+
+    db_session.add(nuevo_personal)
+    db_session.commit()
+    return redirect(url_for('personal_administrativo'))
 
 # Rutas de tabla docentes
 @app.post("/post_docentes")
@@ -439,7 +665,8 @@ def post_docentes():
     nombre = request.form['nombre_docente']
     folio = request.form['folio_docente']
     carrera = request.form['carrera_docente']
-    periodocontrato = request.form['periodo_contrato_docente']
+    periodocontratoini = request.form['fecha_inicio']
+    periodocontratofin = request.form['fecha_fin']
     correo = request.form['correo_docente']
     telefono = request.form['telefono_docente']
     domicilio = request.form['domicilio_docente']
@@ -448,12 +675,15 @@ def post_docentes():
         flash("No registraste ningun producto")
         return redirect(url_for('home'))
     
+    fecha_conversion_inicio = datetime.strptime(periodocontratoini, '%Y-%m-%d')
+    fecha_conversion_fin = datetime.strptime(periodocontratofin, '%Y-%m-%d')
 
     nuevo_docente = models.Docentes(
         nombre = nombre,
         folio = folio,
         carrera = carrera,
-        periodocontrato = periodocontrato,
+        periodocontratoini = fecha_conversion_inicio,
+        periodocontratofin = fecha_conversion_fin,
         correo = correo,
         telefono = telefono,
         domicilio = domicilio
@@ -513,7 +743,7 @@ def delete_personal(id):
     db_session.delete(personal)
     db_session.commit()
 
-    return redirect(url_for('personal'))
+    return redirect(url_for('personal_administrativo'))
 
 @app.post("/alumno/<id>/update")
 def update_alumno(id):
@@ -533,6 +763,7 @@ def update_alumno(id):
     folio = request.form['n_folio_alumno']
     curp = request.form['n_curp_alumno']
     carrera = request.form['n_carrera_alumno']
+    sexo = request.form['n_sexo_alumno']
     domicilio = request.form['n_domicilio_alumno']
     correo = request.form['n_correo_alumno']
     telefono = request.form['n_telefono_alumno']
@@ -554,6 +785,8 @@ def update_alumno(id):
         alumno.correo = correo
     if telefono != None and telefono != "":
         alumno.telefono = telefono
+    if sexo != None and sexo != "":
+        alumno.sexo = sexo
     if fecha_inscripcion != None and fecha_inscripcion != "":
         alumno.fecha_inscripcion = datetime.strptime(fecha_inscripcion, '%Y-%m-%d')
     
@@ -566,7 +799,7 @@ def update_alumno(id):
 
 @app.post("/docente/<id>/update")
 def update_docente(id):
-    '''Ruta para actualizar alumno'''
+    '''Ruta para actualizar docente'''
     sesion_iniciada = session.get('id', False)
 
     if not sesion_iniciada:
@@ -574,114 +807,43 @@ def update_docente(id):
     
     docente = db_session.query(models.Docentes).get(id)
 
-    if docente == None:
-        return "No encontrado",404
+    if docente is None:
+        return "No encontrado", 404
     
     nombre = request.form['n_nombre_docente']
     folio = request.form['n_folio_docente']
     carrera = request.form['n_carrera_docente']
-    periodocontrato = request.form['n_periodo_contrato_docente']
+    periodocontratoini = request.form['n_fecha_inicio']
+    periodocontratofin = request.form['n_fecha_fin']
     correo = request.form['n_correo_docente']
     telefono = request.form['n_telefono_docente']
     domicilio = request.form['n_domicilio_docente']
     
-    if nombre != None and nombre != "":
+    if nombre:
         docente.nombre = nombre
-    if folio != None and folio != "":
+    if folio:
         docente.folio = folio
-    if carrera != None and carrera != "":
+    if carrera:
         docente.carrera = carrera
-    if periodocontrato != None and periodocontrato != "":
-        docente.periodocontrato = periodocontrato
-    if correo != None and correo != "":
+    if periodocontratoini:
+        # Convierte la fecha a objeto datetime
+        docente.periodocontratoini = datetime.strptime(periodocontratoini, '%Y-%m-%d')
+    if periodocontratofin:
+        # Convierte la fecha a objeto datetime
+        docente.periodocontratofin = datetime.strptime(periodocontratofin, '%Y-%m-%d')
+    if correo:
         docente.correo = correo
-    if correo != None and correo != "":
-        docente.correo = correo
-    if telefono != None and telefono != "":
+    if telefono:
         docente.telefono = telefono
-    if domicilio != None and domicilio != "":
+    if domicilio:
         docente.domicilio = domicilio
     
     flash('Docente actualizado correctamente.')
     
-    db_session.add(docente)
     db_session.commit()
 
     return redirect(url_for('docentes'))
 
-@app.get("/personal")
-def personal():
-    sesion_iniciada = session.get('id', False)
-
-    if not sesion_iniciada:
-        return redirect(url_for('login'))
-
-    sesion_iniciada = session.get('id', False)
-
-    if not sesion_iniciada:
-        return redirect(url_for('login'))
-    
-    personal = db_session.query(models.Personal).all()
-    
-    page = request.args.get('page')
-    page = int(page) if (page and page != '') else 1
-
-    page_size = 4
-    total_records = len(personal)
-    pages_count = ceil(total_records / page_size)
-
-    page_offset = (page - 1) * page_size
-    page_limit = page_offset + page_size
-    
-    personal_paginados = personal[page_offset:page_limit]
-
-    args = {'arg1': 'valor1', 'arg2': 'valor2'}
-    
-    return render_template ('personal/personal_administrativo.html', personal=personal_paginados, 
-                                            page=page, 
-                                            pages_count=pages_count, 
-                                            args=args, 
-                                            page_offset=page_offset, 
-                                            page_limit=page_limit, 
-                                            total_records=total_records)
-
-# Rutas de tabla alumnos
-@app.post("/post_personal")
-def post_personal():
-    '''Ruta para alta de alumnos'''
-    sesion_iniciada = session.get('id', False)
-
-    if not sesion_iniciada:
-        return redirect(url_for('login'))
-
-    nombre = request.form['nombre_personal']
-    folio = request.form['folio_personal']
-    puesto = request.form['puesto_personal']
-    periodocontrato = request.form['periodo_contrato_personal']
-    correo = request.form['correo_personal']
-    telefono = request.form['telefono_personal']
-    domicilio = request.form['domicilio_personal']
-
-    if nombre == None or nombre == '':
-        flash("No registraste ningun producto")
-        return redirect(url_for('home'))
-    
-
-    nuevo_personal = models.Personal(
-        nombre = nombre,
-        folio = folio,
-        puesto = puesto,
-        periodocontrato = periodocontrato,
-        correo = correo,
-        telefono = telefono,
-        domicilio = domicilio
-    )
-
-    flash('Registro completado.')
-
-    db_session.add(nuevo_personal)
-    db_session.commit()
-    return redirect(url_for('personal'))
 
 @app.post("/personal/<id>/update")
 def update_personal(id):

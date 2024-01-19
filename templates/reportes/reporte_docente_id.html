@@ -1,22 +1,21 @@
 {% extends 'base.html' %}
 {% block headers %}
-<title>Reporte del alumno</title>
+<title>Reporte del docente</title>
 {% endblock %}
 {% block contenido%}
 
 <div class="container-fluid">
     <div class="row mt-3">
     <div class="col-12 d-flex justify-content-center">
-        <img src="../../static/img/Logo.png" alt="Logo 1" class="img-fluid d-none d-print-block" style="width: 55%;">
+        <img src="../../static/img/Logo.png"alt="Logo 1" class="img-fluid d-none d-print-block" style="width: 55%;">
     </div>
     </div>
 </div>
-
 <div class="container">
     <div class="row">
         <div class="col-md-12">
             <h2 class="row mt-3 justify-content-center d-print-none ">Visualización previa del documento</h2>
-            <h2 class=" mt-3 justify-content-center d-none d-print-block">Reporte de alumno: {{ alumno.nombre }}</h2>
+            <h2 class=" mt-3 justify-content-center d-none d-print-block">Reporte de docente: {{ docente.nombre }}</h2>
         </div>
     </div>
 </div>
@@ -41,29 +40,15 @@
                 <div class="row">
                     <div class="col-md-12">
                         <h5>Nombre</h5>
-                        <h6>{{ alumno.nombre }}</h6>
+                        <h6>{{ docente.nombre }}</h6>
                     </div>
                     <div class="col-md-4">
                         <h5>Folio</h5>
-                        <h6>{{ alumno.folio }}</h6>
-                    </div>
-                    <div class="col-md-2">
-                        <h5> Estatus</h5>
-                        <p>
-                            {% if alumno.estatus == 0 %}
-                                <h6 class="badge bg-success text-light" style="font-size: 14px;">Activo</h6>
-                            {% elif alumno.estatus == 1 %}
-                                <h6 class="badge bg-warning text-dark" style="font-size: 14px;">Pendiente</h6>
-                            {% elif alumno.estatus == 2 %}
-                                <h6 class="badge bg-danger text-light" style="font-size: 14px;">Baja</h6>
-                            {% else %}
-                                <h6 class="badge bg-secondary text-light" style="font-size: 14px;">Graduado</h6>
-                            {% endif %}
-                        </p>
+                        <h6>{{ docente.folio }}</h6>
                     </div>
                     <div class="col-md-6">
                         <h5>Carrera</h5>
-                        <h6>{{ alumno.carrera }}</h6>
+                        <h6>{{ docente.carrera }}</h6>
                     </div>
                 </div>
             </div>
@@ -72,24 +57,24 @@
                     <div class="col-md-4">
                         <h5><i class="bi bi-geo-alt-fill"></i> Domicilio</h5>
                         <h6>
-                            <a href="https://www.google.com/maps/search/{{ alumno.domicilio }}" target="_blank" class="modal-link">
-                                {{ alumno.domicilio }} <i class="bi bi-box-arrow-up-right"></i>
+                            <a href="https://www.google.com/maps/search/{{ docente.domicilio }}" target="_blank" class="modal-link">
+                                {{ docente.domicilio }} <i class="bi bi-box-arrow-up-right"></i>
                             </a>
                         </h6>
                     </div>
                     <div class="col-md-4">
                         <h5><i class="bi bi-envelope"></i> Correo</h5>
                         <h6>
-                            <a href="mailto:{{ alumno.correo }}" target="_blank" class="modal-link">
-                                    {{ alumno.correo }}
+                            <a href="mailto:{{ docente.correo }}" target="_blank" class="modal-link">
+                                    {{ docente.correo }}
                                 </a>
                         </h6>
                     </div>
                     <div class="col-md-4">
                         <h5><i class="bi bi-telephone"></i> Telefono</h5>
                         <h6>
-                                <a href="https://wa.me/{{ alumno.telefono }}" target="_blank" class="modal-link">
-                                    {{ alumno.telefono }}
+                                <a href="https://wa.me/{{ docente.telefono }}" target="_blank" class="modal-link">
+                                    {{ docente.telefono }}
                                 </a>
                             </h6>
                     </div>
@@ -97,23 +82,13 @@
             </div>
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-md-4">
-                        <h5>CURP</h5>
-                        <h6>{{ alumno.curp }}</h6>
+                    <div class="col-md-6">
+                        <h5>Inicio de contrato: </h5>
+                        <h6>{{ docente.periodocontratoini.strftime('%Y-%m-%d') }} </h6>
                     </div>
-                    <div class="col-md-4">
-                        <h5>Fecha de inscripción</h5>
-                        <h6>{{ alumno.fecha_inscripcion }}</h6>
-                    </div>
-                    <div class="col-md-4">
-                        <h5>Sexo</h5>
-                        <p>
-                            {% if alumno.sexo == 0 %}
-                                <h6>Femenino</h6>
-                            {% else %}
-                                <h6>Masculino</h6>
-                            {% endif %}
-                        </p>
+                    <div class="col-md-6">
+                        <h5>Fin de contrato: </h5>
+                        <h6>{{ docente.periodocontratofin.strftime('%Y-%m-%d') }}</h6>
                     </div>
                 </div>
             </div>

@@ -5,6 +5,8 @@ from sqlalchemy import Date
 from database import Database
 from sqlalchemy import ForeignKey, select
 from sqlalchemy.orm import relationship, deferred
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import DateTime
 
 class Alumnos(Database):
     __tablename__ ='alumnos'
@@ -27,17 +29,25 @@ class Docentes(Database):
     id = Column(Integer, primary_key=True)
     nombre = Column(String(50))
     folio = Column(String(30))
-    periodocontrato = Column(String(50))
+    carrera = Column(String(50))
+    periodocontratoini = Column(DateTime)
+    periodocontratofin = Column(DateTime)
     correo = Column(String(50))
     telefono = Column(String(10))
     domicilio = Column(String(500))
-
-class Usuarios(Database):
-    __tablename__ = 'usuarios'
+    
+class Personal(Database):
+    __tablename__ ='personal'
 
     id = Column(Integer, primary_key=True)
-    nom_user =Column(String(100))
-    user_ingreso =Column(String(100))
+    nombre = Column(String(50))
+    folio = Column(String(30))
+    puesto = Column(String(50))
+    periodocontratoini = Column(DateTime)
+    periodocontratofin = Column(DateTime)
+    correo = Column(String(50))
+    telefono = Column(String(10))
+    domicilio = Column(String(500))
     
 class Carreras(Database):
     __tablename__ = "carreras"
@@ -50,3 +60,16 @@ class Grupos(Database):
 
     id = Column(Integer, primary_key=True)
     nombre = Column(String(54))
+    
+class Usuarios(Database):
+    __tablename__ = 'usuarios'
+
+    id = Column(Integer, primary_key=True)
+    nom_user = Column(String(100))
+    user_ingreso_hashed = Column(String(128))  # Almacena la contraseña encriptada
+
+    def set_password(self, password):
+        self.user_ingreso_hashed = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.user_ingreso_hashed, password)
